@@ -25,35 +25,37 @@ public:
         // ---- Row 0 App name: Label + Name field ----
         QHBoxLayout *row0 = new QHBoxLayout();
         QLabel *label0 = new QLabel("App name:", this);
-        m_pathEdit0 = new QLineEdit(this);
-        m_pathEdit0->setPlaceholderText("Write name of the app launcher");
+        m_appName = new QLineEdit(this);
+        m_appName->setPlaceholderText("Write name of the app launcher");
         row0->addWidget(label0);
-        row0->addWidget(m_pathEdit0);
+        row0->addWidget(m_appName);
         mainLayout->addLayout(row0);
 
         // ---- Row 1 (Exec file): Label + Path for Path 1 + Browse button ----
         QHBoxLayout *row1 = new QHBoxLayout();
         QLabel *label1 = new QLabel("Exec Path:", this);
-        m_pathEdit1 = new QLineEdit(this);
-        m_pathEdit1->setPlaceholderText("Select an executable file");
-        QPushButton *m_browseButton1 = new QPushButton("...", this);
-        m_browseButton1->setFixedWidth(35);
+        m_execFilePath = new QLineEdit(this);
+        m_execFilePath->setPlaceholderText("Select an executable file");
+        m_execFilePath->setReadOnly(true);
+        QPushButton *m_browseButtonExec = new QPushButton("...", this);
+        m_browseButtonExec->setFixedWidth(35);
         row1->addWidget(label1);
-        row1->addWidget(m_pathEdit1);
-        row1->addWidget(m_browseButton1);
+        row1->addWidget(m_execFilePath);
+        row1->addWidget(m_browseButtonExec);
         mainLayout->addLayout(row1);
 
 
         // ---- Row 2: Label + Line Edit for Path 2 ----
         QHBoxLayout *row2 = new QHBoxLayout();
         QLabel *label2 = new QLabel("Icon Path:", this);
-        m_pathEdit2 = new QLineEdit(this);
-        m_pathEdit2->setPlaceholderText("Select an icon");
-        QPushButton *m_browseButton2 = new QPushButton("...", this);
-        m_browseButton2->setFixedWidth(35);
+        m_iconNamePath = new QLineEdit(this);
+        m_iconNamePath->setPlaceholderText("Select an icon");
+        m_iconNamePath->setReadOnly(true);
+        QPushButton *m_browseButtonIcon = new QPushButton("...", this);
+        m_browseButtonIcon->setFixedWidth(35);
         row2->addWidget(label2);
-        row2->addWidget(m_pathEdit2);
-        row2->addWidget(m_browseButton2);
+        row2->addWidget(m_iconNamePath);
+        row2->addWidget(m_browseButtonIcon);
         mainLayout->addLayout(row2);
 
         // ---- Row 3: The two buttons + checkbox (placed side-by-side below the fields) ----
@@ -67,8 +69,9 @@ public:
         mainLayout->addLayout(buttonLayout);
 
         // ---- Connect buttons to their slots ----
-        connect(m_browseButton1, &QPushButton::clicked, this, &PathSelectorWidget::onBrowse1);
-        connect(m_browseButton2, &QPushButton::clicked, this, &PathSelectorWidget::onBrowse2);
+        connect(m_appName, &QLineEdit::editingFinished, this, &PathSelectorWidget::onTextUpdate);
+        connect(m_browseButtonExec, &QPushButton::clicked, this, &PathSelectorWidget::onBrowseExec);
+        connect(m_browseButtonIcon, &QPushButton::clicked, this, &PathSelectorWidget::onBrowseIcon);
         connect(m_createButton, &QPushButton::clicked, this, &PathSelectorWidget::onCreate);
 
         setLayout(mainLayout);
@@ -79,22 +82,25 @@ public:
     }
 
 private slots:
-    void onBrowse1() {
+
+    void onTextUpdate() {
+        checkValidity();
+    }
+
+    void onBrowseExec() {
         QString filePath = QFileDialog::getOpenFileName(this, "Select the exec file");
         if (std::filesystem::is_regular_file(filePath.toStdString())) {
-            m_pathEdit1->setText(filePath);
+            m_execFilePath->setText(filePath);
         }
+        checkValidity();
     }
 
-    void onBrowse2() {
+    void onBrowseIcon() {
         QString filePath = QFileDialog::getOpenFileName(this, "Select the icon file");
         if (std::filesystem::is_regular_file(filePath.toStdString())) {
-            m_pathEdit2->setText(filePath);
+            m_iconNamePath->setText(filePath);
         }
-    }
-
-    void onCreateHover() {
-
+        checkValidity();
     }
 
     void onCreate() {
@@ -108,11 +114,18 @@ private slots:
     }
 
 private:
-    QLineEdit *m_pathEdit0;
-    QLineEdit *m_pathEdit1;
-    QLineEdit *m_pathEdit2;
+    QLineEdit *m_appName;
+    QLineEdit *m_execFilePath;
+    QLineEdit *m_iconNamePath;
     QPushButton *m_createButton;
     QCheckBox *m_systemwideCheckBox;
+
+    void checkValidity() {
+        bool isNameValid = !m_execFilePath->text().isEmpty();
+        bool isExecPathValid = !m_execFilePath->text().isEmpty();
+        bool isIconPathValid = !m_iconNamePath->text().isEmpty();
+        m_createButton->setEnabled(isNameValid && isExecPathValid && isIconPathValid);
+    }
 };
 
 int main(int argc, char *argv[]) {
