@@ -10,8 +10,8 @@
 #include <string>
 #include <iostream>
 #include <filesystem>
-
-
+#include <fstream>
+#include <regex>
 
 
 class PathSelectorWidget : public QWidget {
@@ -109,6 +109,23 @@ private slots:
             std::string desktopFilePath = "/usr/share/applications";
         }
 
+        desktopFilePath+=m_appName->text().toStdString() +".desktop";
+
+
+        std::ifstream ifs("Template.desktop");
+        std::string content;
+        content.assign( (std::istreambuf_iterator<char>(ifs) ),
+                        (std::istreambuf_iterator<char>()    ) );
+
+        content = std::regex_replace(content, std::regex("_name_"), m_appName->text().toStdString());
+        content = std::regex_replace(content, std::regex("_execPath_"), m_execFilePath->text().toStdString());
+        content = std::regex_replace(content, std::regex("_iconPath_"), m_iconNamePath->text().toStdString());
+
+        std::ofstream desktopFile(desktopFilePath);
+        desktopFile << content;
+
+        desktopFile.close();
+
 
         QApplication::quit();
     }
@@ -135,7 +152,4 @@ int main(int argc, char *argv[]) {
     return app.exec();
 }
 
-
-// Important: Because we use Q_OBJECT, you MUST have CMAKE_AUTOMOC ON in your CMakeLists.txt
-// (which we already set in the previous guide).
 #include "main.moc"

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=_name_
+Exec=_execPath_
+Icon=_iconPath_
+Terminal=false
+Type=Application

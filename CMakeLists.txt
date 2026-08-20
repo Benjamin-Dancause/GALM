@@ -6,6 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+configure_file(Template.desktop Template.desktop COPYONLY)
 
 find_package(Qt6 COMPONENTS
         Core
