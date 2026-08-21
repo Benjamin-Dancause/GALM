@@ -106,16 +106,17 @@ private slots:
     void onCreate() {
         std::string desktopFilePath = std::string(std::getenv("HOME")) + "/.local/share/applications/";
         if (m_systemwideCheckBox->isChecked()) {
-            std::string desktopFilePath = "/usr/share/applications";
+            desktopFilePath = "/usr/share/applications";
         }
 
         desktopFilePath+=m_appName->text().toStdString() +".desktop";
-
 
         std::ifstream ifs("Template.desktop");
         std::string content;
         content.assign( (std::istreambuf_iterator<char>(ifs) ),
                         (std::istreambuf_iterator<char>()    ) );
+        
+        ifs.close();
 
         content = std::regex_replace(content, std::regex("_name_"), m_appName->text().toStdString());
         content = std::regex_replace(content, std::regex("_execPath_"), m_execFilePath->text().toStdString());
