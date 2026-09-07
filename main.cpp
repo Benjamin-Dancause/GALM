@@ -77,7 +77,7 @@ public:
         connect(m_createButton, &QPushButton::clicked, this, &PathSelectorWidget::onCreate);
 
         setLayout(mainLayout);
-        setWindowTitle("App launcher creation wizard");
+        setWindowTitle("GALM — GNOME App Launcher Maker");
         setFixedSize(600,175);
 
         std::cout << std::string(std::getenv("HOME")) + "/.local/share/applications/" << std::endl;

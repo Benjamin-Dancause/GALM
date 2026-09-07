@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(GnomeAppLauncherMaker)
+project(GALM)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_AUTOMOC ON)
@@ -12,8 +12,8 @@ find_package(Qt6 COMPONENTS
         Widgets
         REQUIRED)
 
-add_executable(GnomeAppLauncherMaker main.cpp resources.qrc)
-target_link_libraries(GnomeAppLauncherMaker
+add_executable(GALM main.cpp resources.qrc)
+target_link_libraries(GALM
         Qt::Core
         Qt::Gui
         Qt::Widgets
