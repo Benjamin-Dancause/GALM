@@ -10,8 +10,10 @@
 #include <string>
 #include <iostream>
 #include <filesystem>
-#include <fstream>
-#include <regex>
+#include <QDir>
+#include <QFile>
+#include <QSaveFile>
+#include <QMessageBox>
 
 
 class PathSelectorWidget : public QWidget {
@@ -69,7 +71,7 @@ public:
         mainLayout->addLayout(buttonLayout);
 
         // ---- Connect buttons to their slots ----
-        connect(m_appName, &QLineEdit::editingFinished, this, &PathSelectorWidget::onTextUpdate);
+        connect(m_appName, &QLineEdit::textChanged, this, &PathSelectorWidget::onTextUpdate);
         connect(m_browseButtonExec, &QPushButton::clicked, this, &PathSelectorWidget::onBrowseExec);
         connect(m_browseButtonIcon, &QPushButton::clicked, this, &PathSelectorWidget::onBrowseIcon);
         connect(m_createButton, &QPushButton::clicked, this, &PathSelectorWidget::onCreate);
@@ -104,29 +106,50 @@ private slots:
     }
 
     void onCreate() {
-        std::string desktopFilePath = std::string(std::getenv("HOME")) + "/.local/share/applications/";
-        if (m_systemwideCheckBox->isChecked()) {
-            desktopFilePath = "/usr/share/applications";
+        checkValidity();
+        if (!m_createButton->isEnabled()) {
+            return;
         }
 
-        desktopFilePath+=m_appName->text().toStdString() +".desktop";
+        const auto showError = [this](const QString &message) {
+            QMessageBox::critical(this, "Could not create launcher", message);
+        };
+        QFile templateFile(":/Template.desktop");
+        if (!templateFile.open(QIODevice::ReadOnly)) {
+            showError("Could not read the bundled launcher template: " + templateFile.errorString());
+            return;
+        }
+        QString content = QString::fromUtf8(templateFile.readAll());
+        if (templateFile.error() != QFileDevice::NoError || content.trimmed().isEmpty()) {
+            showError("The bundled launcher template could not be read or is empty.");
+            return;
+        }
+        content.replace("_name_", m_appName->text());
+        content.replace("_execPath_", m_execFilePath->text());
+        content.replace("_iconPath_", m_iconNamePath->text());
 
-        std::ifstream ifs("Template.desktop");
-        std::string content;
-        content.assign( (std::istreambuf_iterator<char>(ifs) ),
-                        (std::istreambuf_iterator<char>()    ) );
-        
-        ifs.close();
-
-        content = std::regex_replace(content, std::regex("_name_"), m_appName->text().toStdString());
-        content = std::regex_replace(content, std::regex("_execPath_"), m_execFilePath->text().toStdString());
-        content = std::regex_replace(content, std::regex("_iconPath_"), m_iconNamePath->text().toStdString());
-
-        std::ofstream desktopFile(desktopFilePath);
-        desktopFile << content;
-
-        desktopFile.close();
-
+        const QString directory = m_systemwideCheckBox->isChecked()
+            ? "/usr/share/applications"
+            : QDir::homePath() + "/.local/share/applications";
+        if (!QDir().mkpath(directory)) {
+            showError("Could not create the applications directory: " + directory);
+            return;
+        }
+        const QString desktopFilePath = QDir(directory).filePath(m_appName->text() + ".desktop");
+        QSaveFile desktopFile(desktopFilePath);
+        if (!desktopFile.open(QIODevice::WriteOnly)) {
+            showError("Could not open " + desktopFilePath + ": " + desktopFile.errorString());
+            return;
+        }
+        const QByteArray data = content.toUtf8();
+        if (desktopFile.write(data) != data.size()) {
+            showError("Could not write " + desktopFilePath + ": " + desktopFile.errorString());
+            return;
+        }
+        if (!desktopFile.commit()) {
+            showError("Could not save " + desktopFilePath + ": " + desktopFile.errorString());
+            return;
+        }
 
         QApplication::quit();
     }
@@ -139,7 +162,9 @@ private:
     QCheckBox *m_systemwideCheckBox;
 
     void checkValidity() {
-        bool isNameValid = !m_execFilePath->text().isEmpty();
+        const QString name = m_appName->text();
+        bool isNameValid = !name.trimmed().isEmpty() && !name.contains('/')
+            && !name.contains('\n') && !name.contains('\r') && !name.contains(QChar::Null);
         bool isExecPathValid = !m_execFilePath->text().isEmpty();
         bool isIconPathValid = !m_iconNamePath->text().isEmpty();
         m_createButton->setEnabled(isNameValid && isExecPathValid && isIconPathValid);
