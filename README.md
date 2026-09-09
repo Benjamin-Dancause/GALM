@@ -18,7 +18,7 @@ From the project directory:
 
 ```sh
 cmake -S . -B build
-cmake --build build --parallel
+cmake --build build
 ./build/GALM
 ```
 
@@ -28,11 +28,11 @@ The launcher template is embedded in the executable during the build. You can la
 
 1. Enter an **App name**. This becomes both the displayed name and the `.desktop` filename.
 2. Use the **Exec Path** browse button to select the program to launch.
-3. Use the **Icon Path** browse button to select its icon file.
+3. Optionally use the **Icon** browse button to select its icon file.
 4. Optionally select **Make systemwide launcher**.
 5. Click **Create app launcher**.
 
-All three fields are required. Names cannot be blank or contain `/`, line breaks, or null characters. The app closes after a successful save. If saving fails, it displays an error and stays open.
+Only the app name and executable are required. If no icon is selected, the launcher omits the `Icon` entry. Names cannot be blank or contain `/`, line breaks, or null characters. The app closes after a successful save. If saving fails, it displays an error and stays open.
 
 ### Save locations
 
@@ -52,30 +52,43 @@ For example, a launcher might contain:
 ```ini
 [Desktop Entry]
 Name=My App
-Exec=/home/user/apps/my-app
+Exec="/home/user/apps/my-app"
 Icon=/home/user/Pictures/my-app.png
 Terminal=false
 Type=Application
 ```
+
+Executable paths are quoted and escaped according to the [desktop-entry format](https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html), including literal percent signs. Names and icon paths are escaped as desktop-entry values. Template-like text in your inputs is preserved literally.
 
 The executable and icon are referenced at their selected paths; they are not copied. Keep those files in place after creating the launcher.
 
 ## Current limitations
 
 - The file picker checks that the selected program is a regular file, but does not check or grant executable permission.
-- Executable paths are inserted without quoting or escaping. Paths containing spaces or special characters may need manual editing in the generated `.desktop` file.
+- GIO may reject executables whose filenames contain literal percent signs, even with the required `%%` escaping. Rename those executables to avoid percent signs if launching fails.
+- Executable paths containing `=` are rejected because the desktop-entry specification does not allow them.
 - The interface does not offer command-line arguments or a terminal option. The template uses `Terminal=false`.
 
 ## Troubleshooting
 
-- **Create button disabled:** Enter a valid name and select both an executable and an icon.
+- **Create button disabled:** Enter a valid name and select an executable.
 - **Could not create or save launcher:** Check write permissions for the destination and available disk space. For a personal launcher, leave the systemwide option unchecked.
-- **Launcher does not start:** Check that the executable still exists, has execute permission, and that its `Exec` entry is correctly quoted if the path contains spaces or special characters.
+- **Launcher does not start:** Check that the executable still exists, has execute permission, and that it can run directly.
 - **Empty files from an older build:** Rebuild and run the updated executable, then recreate the affected launchers. Older builds depended on finding `Template.desktop` in the current working directory.
 
 ## Project files
 
 - `main.cpp`: Qt interface, input validation, and launcher saving.
+- `launcher.cpp` / `launcher.h`: Desktop-entry escaping and template rendering.
+- `tests/launcher_serialization_tests.cpp`: Serialization regressions and optional `desktop-file-validate` checks.
 - `Template.desktop`: Launcher template. Rebuild after changing it.
 - `resources.qrc`: Embeds the template as a Qt resource.
 - `CMakeLists.txt`: Build configuration.
+
+## Tests
+
+```sh
+ctest --test-dir build --output-on-failure
+```
+
+Build first using the commands above. If `desktop-file-validate` is installed, the tests also validate the generated entries with it.

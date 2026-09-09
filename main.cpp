@@ -14,6 +14,7 @@
 #include <QFile>
 #include <QSaveFile>
 #include <QMessageBox>
+#include "launcher.h"
 
 
 class PathSelectorWidget : public QWidget {
@@ -49,9 +50,9 @@ public:
 
         // ---- Row 2: Label + Line Edit for Path 2 ----
         QHBoxLayout *row2 = new QHBoxLayout();
-        QLabel *label2 = new QLabel("Icon Path:", this);
+        QLabel *label2 = new QLabel("Icon (optional):", this);
         m_iconNamePath = new QLineEdit(this);
-        m_iconNamePath->setPlaceholderText("Select an icon");
+        m_iconNamePath->setPlaceholderText("Select an icon (optional)");
         m_iconNamePath->setReadOnly(true);
         QPushButton *m_browseButtonIcon = new QPushButton("...", this);
         m_browseButtonIcon->setFixedWidth(35);
@@ -114,6 +115,10 @@ private slots:
         const auto showError = [this](const QString &message) {
             QMessageBox::critical(this, "Could not create launcher", message);
         };
+        if (m_execFilePath->text().contains('=')) {
+            showError("Executable paths cannot contain '=' in a desktop entry. Rename the executable or its containing directory.");
+            return;
+        }
         QFile templateFile(":/Template.desktop");
         if (!templateFile.open(QIODevice::ReadOnly)) {
             showError("Could not read the bundled launcher template: " + templateFile.errorString());
@@ -124,9 +129,8 @@ private slots:
             showError("The bundled launcher template could not be read or is empty.");
             return;
         }
-        content.replace("_name_", m_appName->text());
-        content.replace("_execPath_", m_execFilePath->text());
-        content.replace("_iconPath_", m_iconNamePath->text());
+        content = renderLauncher(content, m_appName->text(),
+                                 m_execFilePath->text(), m_iconNamePath->text());
 
         const QString directory = m_systemwideCheckBox->isChecked()
             ? "/usr/share/applications"
@@ -166,8 +170,7 @@ private:
         bool isNameValid = !name.trimmed().isEmpty() && !name.contains('/')
             && !name.contains('\n') && !name.contains('\r') && !name.contains(QChar::Null);
         bool isExecPathValid = !m_execFilePath->text().isEmpty();
-        bool isIconPathValid = !m_iconNamePath->text().isEmpty();
-        m_createButton->setEnabled(isNameValid && isExecPathValid && isIconPathValid);
+        m_createButton->setEnabled(isNameValid && isExecPathValid);
     }
 };
 
