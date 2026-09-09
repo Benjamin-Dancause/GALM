@@ -43,7 +43,7 @@ Only the app name and executable are required. If no icon is selected, the launc
 
 The app creates the destination directory if needed. Systemwide creation requires write permission to `/usr/share/applications`; the checkbox does not request elevated privileges.
 
-Creating a launcher with the same name replaces the existing file at that location without a confirmation prompt. Files are saved atomically, so a failed write does not replace an existing launcher with incomplete content.
+Creating a launcher with the same name asks you to confirm replacement and shows the destination path. Choose **Replace** to overwrite it, or **Cancel** to keep the existing file and return to the form. Cancel is the default. Files are saved atomically, so a failed write does not replace an existing launcher with incomplete content.
 
 ## Generated launcher
 

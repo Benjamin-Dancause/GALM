@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSaveFile>
 #include <QMessageBox>
 #include "launcher.h"
@@ -140,6 +141,23 @@ private slots:
             return;
         }
         const QString desktopFilePath = QDir(directory).filePath(m_appName->text() + ".desktop");
+        const QFileInfo destination(desktopFilePath);
+        if (destination.exists() || destination.isSymLink()) {
+            QMessageBox confirmation(QMessageBox::Warning, "Replace existing launcher?",
+                                     "A launcher already exists at this location:",
+                                     QMessageBox::NoButton, this);
+            confirmation.setTextFormat(Qt::PlainText);
+            confirmation.setInformativeText(desktopFilePath +
+                                            "\n\nReplace it with the new launcher?");
+            auto *replaceButton = confirmation.addButton("Replace", QMessageBox::AcceptRole);
+            auto *cancelButton = confirmation.addButton(QMessageBox::Cancel);
+            confirmation.setDefaultButton(cancelButton);
+            confirmation.setEscapeButton(cancelButton);
+            confirmation.exec();
+            if (confirmation.clickedButton() != replaceButton) {
+                return;
+            }
+        }
         QSaveFile desktopFile(desktopFilePath);
         if (!desktopFile.open(QIODevice::WriteOnly)) {
             showError("Could not open " + desktopFilePath + ": " + desktopFile.errorString());
