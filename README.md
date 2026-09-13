@@ -91,4 +91,15 @@ The executable and icon are referenced at their selected paths; they are not cop
 ctest --test-dir build --output-on-failure
 ```
 
-Build first using the commands above. If `desktop-file-validate` is installed, the tests also validate the generated entries with it.
+Build first using the commands above. Tests require the Qt 6 Test development library and run without a graphical session. Use `-DBUILD_TESTING=OFF` when configuring an application-only build.
+
+CTest runs two suites:
+
+- `launcher_serialization`: Named, data-driven checks for escaping, Unicode, literal placeholders, optional icons, and template edge cases.
+- `launcher_desktop_validation`: Checks generated entries with `desktop-file-validate`. CTest reports this suite as skipped when the tool is unavailable.
+
+Run a single regression directly, for example:
+
+```sh
+./build/launcher_serialization_tests bundledTemplate:no-icon
+```

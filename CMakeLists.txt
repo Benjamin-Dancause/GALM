@@ -21,8 +21,14 @@ target_link_libraries(GALM
 
 include(CTest)
 if(BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
     add_executable(launcher_serialization_tests tests/launcher_serialization_tests.cpp launcher.cpp resources.qrc)
     target_include_directories(launcher_serialization_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(launcher_serialization_tests PRIVATE Qt::Core)
-    add_test(NAME launcher_serialization COMMAND launcher_serialization_tests)
+    target_link_libraries(launcher_serialization_tests PRIVATE Qt::Core Qt::Test)
+    add_test(NAME launcher_serialization COMMAND launcher_serialization_tests bundledTemplate templateRendering)
+    add_test(NAME launcher_desktop_validation COMMAND launcher_serialization_tests desktopValidation)
+    set_tests_properties(launcher_desktop_validation PROPERTIES
+        TIMEOUT 120
+        SKIP_REGULAR_EXPRESSION "desktop-file-validate is not installed"
+    )
 endif()
